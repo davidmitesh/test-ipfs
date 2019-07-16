@@ -3,34 +3,91 @@ const ipfsAPI = require('ipfs-api');
 const express = require('express');
 const fs = require('fs');
 const app = express();
+const ethers=require('ethers');
+var bytecode = fs.readFileSync('license_sol_licenseValidation.bin').toString();
+var abi = JSON.parse(fs.readFileSync('license_sol_licenseValidation.abi').toString());
+var provider = new ethers.providers.JsonRpcProvider();
+var address='0x28D72Eb756E6dF607A856745C6f606f6b199C897';
+privateKey='0x2354ff3e0bc006ebde5c7c0b5b9c15c9d07efe0deeef7c9a07c666decb126a54';
+var wallet = new ethers.Wallet(privateKey, provider);
+var contract = new ethers.Contract(address, abi, wallet);
 
+contract.getHash(5).then((r)=>console.log(r));
 //Connceting to the ipfs network via infura gateway
 const ipfs = ipfsAPI('ipfs.infura.io', '5001', {protocol: 'https'})
-console.log(ipfs);
+//should only be run once for deployment of smart license contract
+app.get('/deployContract',(req,res)=>{
 
-//Reading file from computer
-let testFile = fs.readFileSync("textfile.txt");
-//Creating buffer for ipfs function to add file to the system
-let testBuffer = new Buffer(testFile);
-
-
-//Addfile router for adding file a local file to the IPFS network without any local node
-app.get('/addfile', function(req, res) {
-
-    ipfs.files.add(testBuffer, function (err, file) {
-        if (err) {
-          console.log(err);
-        }
-        console.log(file)
-      })
-    console.log('hey u are good!')
+    var signer = provider.getSigner(0);//contract will be signed and owned by the first address in ganache CLI
+    var factory = new ethers.ContractFactory(abi, bytecode, signer);//factory the altogether to be deployed
+    var contract = null //to be in safe side,just making contract empty
+    factory.deploy().then((c)=> { contract = c
+    res.send('contract succesfully deployed')
+console.log(contract)});//the contract is being deployed
 
 })
+// provider.listAccounts().then(result => console.log(result));
+app.get('/addApplicant',(req,res)=>{
+    // //Reading file from computer
+    let testFile = fs.readFileSync("file.json");
+    // //Creating buffer for ipfs function to add file to the system
+    let testBuffer = new Buffer(testFile);
+
+    //
+    // //Addfile router for adding file a local file to the IPFS network without any local node
+
+    //
+        ipfs.files.add(testBuffer, function (err, file) {
+            if (err) {
+              console.log(err);
+            }
+
+  console.log(file);
+            // console.log(file[0].hash);
+            // var file = JSON.parse(fs.readFileSync('file.json').toString());
+
+                 contract.addContact(file[0].hash).then((r)=>{
+                     contract.getUID().then((f)=>{
+                         console.log(f.toNumber())
+                          data={"name":"mitesh pandey","id":f.toNumber()}
+                          fs.writeFileSync('file.json',JSON.stringify(data));
+                              res.send("written succesfully");
+
+      })
+  })
+})
+
+
+
+    //
+    // privateKey='0x2354ff3e0bc006ebde5c7c0b5b9c15c9d07efe0deeef7c9a07c666decb126a54';
+    // // var file = JSON.parse(fs.readFileSync('file.json').toString());
+    //     var wallet = new ethers.Wallet(privateKey, provider);
+    //     var contract = new ethers.Contract(address, abi, wallet);
+    //      contract.addContact().then((r)=>{
+    //          contract.getUID().then((f)=>{
+    //               data={"name":"mitesh pandey","id":f.toNumber()}
+    //               fs.writeFileSync('file.json',JSON.stringify(data),function(err,result){
+    //                   console.log("written succesfully")
+    //
+    //                   //
+    //
+
+})
+
+
+
+
+
+
+//console.log(ipfs);
+
+
 //Getting the uploaded file via hash code.
 app.get('/getfile', function(req, res) {
 
     //This hash is returned hash of addFile router.
-    const validCID = 'QmT6mW5BLnvFhTh1fvv52JcDNpQQg7QUhtu4eNeykZpSaR'
+    const validCID = 'QmWdw8u3w4BqsZJ9ktw8CtBKEUySAQLQnfKiTxLRsi8KjC'
 
     ipfs.files.get(validCID, function (err, files) {
         console.log(files);
