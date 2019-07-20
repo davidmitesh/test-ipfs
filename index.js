@@ -7,19 +7,19 @@ const ethers=require('ethers');
 var bytecode = fs.readFileSync('license_sol_licenseValidation.bin').toString();
 var abi = JSON.parse(fs.readFileSync('license_sol_licenseValidation.abi').toString());
 var provider = new ethers.providers.JsonRpcProvider();
-var address='0x28D72Eb756E6dF607A856745C6f606f6b199C897';
-privateKey='0x2354ff3e0bc006ebde5c7c0b5b9c15c9d07efe0deeef7c9a07c666decb126a54';
+var address='0xdee96F1BBBAC9403251e9d4d288e803C6394a48D';
+privateKey='0x95704cff0bbdb1259b4b45af3ff474185b625c31fb47c5fcb47bfe482319e12c';
 var wallet = new ethers.Wallet(privateKey, provider);
 var contract = new ethers.Contract(address, abi, wallet);
 
-contract.getHash(5).then((r)=>console.log(r));
+contract.getHash(0).then((r)=>console.log(r));
 //Connceting to the ipfs network via infura gateway
 const ipfs = ipfsAPI('ipfs.infura.io', '5001', {protocol: 'https'})
 //should only be run once for deployment of smart license contract
 app.get('/deployContract',(req,res)=>{
 
     var signer = provider.getSigner(0);//contract will be signed and owned by the first address in ganache CLI
-    var factory = new ethers.ContractFactory(abi, bytecode, signer);//factory the altogether to be deployed
+    var factory = new ethers.ContractFactory(abi, bytecode, signer);//factory the altogethers to be deployed
     var contract = null //to be in safe side,just making contract empty
     factory.deploy().then((c)=> { contract = c
     res.send('contract succesfully deployed')
@@ -43,8 +43,8 @@ app.get('/addApplicant',(req,res)=>{
             }
 
   console.log(file);
-            // console.log(file[0].hash);
-            // var file = JSON.parse(fs.readFileSync('file.json').toString());
+             console.log(file[0].hash);
+            // var file = JSON.parse(fs.readFileSync('file.json') .toString());
 
                  contract.addContact(file[0].hash).then((r)=>{
                      contract.getUID().then((f)=>{
@@ -97,6 +97,19 @@ app.get('/getfile', function(req, res) {
         })
       })
 
+})
+
+app.get('/setStatus',(req,res)=>{
+     contract.set_update(req.body.trialpass,req.body.writtenpass,req.body.id).then((r)=>{
+         console.log('successfully updated to the contract');
+     })
+
+})
+app.get('/getContact',(req,res)=>{
+    console.log(req.body);
+    contract.getContact(req.body.id).then((r)=>{
+        console.log(r);
+    })
 })
 
 app.listen(3000, () => console.log('App listening on port 3000!'))
